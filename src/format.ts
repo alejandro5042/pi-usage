@@ -21,6 +21,9 @@ type UsageStatusStyler = {
 
 const BAR_SEGMENTS = 20;
 const VALUE_COLUMN = 29;
+// GitHub values AI credits at $0.01 each; legacy request quotas are not currency.
+// https://docs.github.com/en/copilot/concepts/billing-and-usage/individuals/billing
+const COPILOT_CREDITS_PER_USD = 100;
 
 export function formatUsageReport(report: UsageReport, displayState: UsageDisplayState): string {
 	const stateLabel = displayState === "current" ? "Current" : "Configured";
@@ -144,15 +147,27 @@ function formatGitHubCopilotReport(lines: string[], report: UsageReport): void {
 function formatGitHubCopilotStatusline(report: UsageReport): string {
 	const quota = findGitHubCopilotQuota(report);
 	const kind = compactGitHubCopilotQuotaKind(quota);
+	const creditBased = quota?.id === "ai-credits";
 	if (!quota || quota.limit === undefined || quota.remaining === undefined) {
-		return `${kind} unlimited`;
+		return creditBased ? "unlimited" : `${kind} unlimited`;
 	}
 	const overage = report.metrics.find((metric) => metric.id === "overage-used");
 	const overageSuffix =
 		typeof overage?.value === "number" && overage.value > 0
-			? ` +${formatCount(overage.value)} over`
+			? ` +${creditBased ? formatCopilotCreditsUsd(overage.value) : formatCount(overage.value)} over`
 			: "";
+	if (creditBased) {
+		return `${percentUsed(quota)}%/${formatCopilotCreditsUsd(quota.limit)}${overageSuffix}`;
+	}
 	return `${kind === "premium" ? "" : `${kind} `}${formatCount(quotaUsed(quota))}/${formatCount(quota.limit)} ${percentUsed(quota)}%${overageSuffix}`;
+}
+
+function formatCopilotCreditsUsd(credits: number): string {
+	const usd = credits / COPILOT_CREDITS_PER_USD;
+	return `$${usd.toLocaleString("en-US", {
+		minimumFractionDigits: Number.isInteger(usd) ? 0 : 2,
+		maximumFractionDigits: 2,
+	})}`;
 }
 
 function findGitHubCopilotQuota(report: UsageReport): UsageBucket | undefined {

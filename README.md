@@ -142,7 +142,7 @@ Opaque credit and account IDs are never shown or persisted by the extension.
 - Semantics: the allowance reported for the active Copilot plan—AI credits for current usage-based billing, premium requests for legacy annual billing, or chat requests for Copilot Free's limited response shape
 - Source: GitHub's undocumented `GET /copilot_internal/user` endpoint
 - Displayed data: entitlement, used allowance, percentage used, reset time, plan, and any additional usage beyond the included allowance
-- Statusline examples: `copilot credits 300/1,500 20%`, `copilot 55/300 18%`, or `copilot chat 10/50 20%`
+- Statusline examples: `copilot 20%/$15`, `copilot 55/300 18%`, or `copilot chat 10/50 20%`
 
 GitHub's quota endpoint requires the original GitHub OAuth token rather than the short-lived Copilot inference token exposed by runtime auth.
 `pi-usage` therefore supports Copilot accounts created through Pi's `/login` flow, reads that stored credential through Pi's public API, and uses it only when its short-lived access token matches the active runtime credential.
@@ -187,7 +187,7 @@ The `usage` status item is active only for the selected model provider.
 It refreshes asynchronously at session start, when the session tree or model changes, at the start of a new turn, after Fast-mode changes, and after explicit `/usage` actions. It does not run an idle timer, so leaving Pi unattended does not cause background status redraws; the five-minute cache still bounds ordinary non-forced queries. The status is cleared when the model changes to an unsupported provider.
 
 Usage status text is published through Pi's extension-status API (`ctx.ui.setStatus("usage", …)`) without replacing the active footer. Pi's built-in footer or a compatible custom footer such as `pi-footer` controls where it appears. Manual another-provider and all-provider queries never publish to the statusline.
-Credit balances and Copilot quota counts, including additional usage, use comma thousands separators in both the statusline and detailed reports (for example, `1,234.5` credits). Dollar formatting is unchanged.
+Credit balances and detailed Copilot quota counts, including additional usage, use comma thousands separators (for example, `1,234.5` credits). The Copilot AI-credit statusline shows `<percent used>/<allowance in USD>`, for example `51%/$1,100` for a 110,000-credit allowance. It omits a separate currency icon because the dollar amount already includes `$`. [GitHub values 100 AI credits at $1](https://docs.github.com/en/copilot/concepts/billing-and-usage/individuals/billing). This is the included allowance's dollar equivalent, not an invoice or the current plan price. Overage is shown separately in dollars; detailed reports retain their original credit values and labels. Legacy premium-request and chat quotas are not converted to dollars. Other providers' dollar formatting is unchanged.
 `@narumitw/pi-statusline` supplies the default `📊` icon; `pi-usage` publishes text-only values.
 
 ## Claude subscription usage

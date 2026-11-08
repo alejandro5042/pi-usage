@@ -34,9 +34,8 @@ test("formatUsage preserves nonnumeric Codex credit states", () => {
 });
 
 for (const tokenBasedBilling of [true, false]) {
-	const kind = tokenBasedBilling ? "credits " : "";
 	const label = tokenBasedBilling ? "AI credits" : "Premium requests";
-	test(`formatUsage groups Copilot ${label} counts without rounding fractions`, () => {
+	test(`formatUsage formats Copilot ${label} allowance while preserving detailed counts`, () => {
 		const report = normalizeGitHubCopilotUsagePayload(
 			{
 				quota_snapshots: {
@@ -50,7 +49,10 @@ for (const tokenBasedBilling of [true, false]) {
 			},
 			0,
 		);
-		assert.equal(formatUsageStatusline(report), `${kind}1,234.56789/10,000 12%`);
+		assert.equal(
+			formatUsageStatusline(report),
+			tokenBasedBilling ? "12%/$100" : "1,234.56789/10,000 12%",
+		);
 		assert.match(formatUsageReport(report, "current"), /1,234\.56789 of 10,000 used · 12%/u);
 	});
 
@@ -67,10 +69,38 @@ for (const tokenBasedBilling of [true, false]) {
 			},
 			0,
 		);
-		assert.equal(formatUsageStatusline(report), `${kind}10,000/10,000 100% +1,234.5 over`);
+		assert.equal(
+			formatUsageStatusline(report),
+			tokenBasedBilling ? "100%/$100 +$12.35 over" : "10,000/10,000 100% +1,234.5 over",
+		);
 		const detail = formatUsageReport(report, "configured");
 		assert.match(detail, /10,000 of 10,000 used · 100%/u);
 		assert.ok(detail.endsWith(`1,234.5 ${label}`));
+	});
+}
+
+for (const [entitlement, used, expected] of [
+	[110_000, 56_100, "51%/$1,100"],
+	[123_456, 61_728, "50%/$1,234.56"],
+	[10_010, 5_005, "50%/$100.10"],
+	[0, 0, "0%/$0"],
+] as const) {
+	test(`formatUsage converts Copilot allowance ${entitlement} credits to dollars`, () => {
+		const report = normalizeGitHubCopilotUsagePayload(
+			{
+				quota_snapshots: {
+					premium_interactions: {
+						token_based_billing: true,
+						credits_used: used,
+						entitlement,
+						remaining: entitlement - used,
+					},
+				},
+			},
+			0,
+		);
+		assert.equal(formatUsageStatusline(report), expected);
+		assert.match(formatUsageReport(report, "current"), /AI credits:/u);
 	});
 }
 
