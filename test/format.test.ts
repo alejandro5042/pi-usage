@@ -5,12 +5,11 @@ import { normalizeCodexBackendPayload } from "../src/providers/codex.js";
 import { normalizeGitHubCopilotUsagePayload } from "../src/providers/github-copilot.js";
 import { normalizeOpenRouterKeyPayload } from "../src/providers/openrouter.js";
 
-for (const [balance, formatted] of [
-	[0, "0"],
-	[999, "999"],
-	[1_000, "1,000"],
-	[1_234_567.890123, "1,234,567.890123"],
-] as const) {
+const countFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 20 });
+const formatCount = (value: number) => countFormatter.format(value);
+
+for (const balance of [0, 999, 1_000, 1_234_567.890123] as const) {
+	const formatted = formatCount(balance);
 	test(`formatUsage formats Codex credit balance ${balance} in status and detailed reports`, () => {
 		const report = normalizeCodexBackendPayload(
 			{ credits: { has_credits: true, balance: String(balance) } },
@@ -50,8 +49,15 @@ for (const tokenBasedBilling of [true, false]) {
 			},
 			0,
 		);
-		assert.equal(formatUsageStatusline(report), `${kind}1,234.56789/10,000 12%`);
-		assert.match(formatUsageReport(report, "current"), /1,234\.56789 of 10,000 used · 12%/u);
+		assert.equal(
+			formatUsageStatusline(report),
+			`${kind}${formatCount(1_234.56789)}/${formatCount(10_000)} 12%`,
+		);
+		assert.ok(
+			formatUsageReport(report, "current").includes(
+				`${formatCount(1_234.56789)} of ${formatCount(10_000)} used · 12%`,
+			),
+		);
 	});
 
 	test(`formatUsage groups Copilot ${label} overage while capping included usage`, () => {
@@ -67,10 +73,13 @@ for (const tokenBasedBilling of [true, false]) {
 			},
 			0,
 		);
-		assert.equal(formatUsageStatusline(report), `${kind}10,000/10,000 100% +1,234.5 over`);
+		assert.equal(
+			formatUsageStatusline(report),
+			`${kind}${formatCount(10_000)}/${formatCount(10_000)} 100% +${formatCount(1_234.5)} over`,
+		);
 		const detail = formatUsageReport(report, "configured");
-		assert.match(detail, /10,000 of 10,000 used · 100%/u);
-		assert.ok(detail.endsWith(`1,234.5 ${label}`));
+		assert.ok(detail.includes(`${formatCount(10_000)} of ${formatCount(10_000)} used · 100%`));
+		assert.ok(detail.endsWith(`${formatCount(1_234.5)} ${label}`));
 	});
 }
 
@@ -79,8 +88,15 @@ test("formatUsage groups Copilot chat quota counts", () => {
 		{ limited_user_quotas: { chat: 8_000 }, monthly_quotas: { chat: 10_000 } },
 		0,
 	);
-	assert.equal(formatUsageStatusline(report), "chat 2,000/10,000 20%");
-	assert.match(formatUsageReport(report, "current"), /2,000 of 10,000 used · 20%/u);
+	assert.equal(
+		formatUsageStatusline(report),
+		`chat ${formatCount(2_000)}/${formatCount(10_000)} 20%`,
+	);
+	assert.ok(
+		formatUsageReport(report, "current").includes(
+			`${formatCount(2_000)} of ${formatCount(10_000)} used · 20%`,
+		),
+	);
 });
 
 test("formatUsage leaves dollar amounts unchanged", () => {

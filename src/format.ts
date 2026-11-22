@@ -397,7 +397,7 @@ function formatMetricValue(value: number | string, unit: UsageBucket["unit"] | u
 }
 
 function formatCount(value: number): string {
-	return new Intl.NumberFormat("en-US", { maximumFractionDigits: 20 }).format(value);
+	return new Intl.NumberFormat(undefined, { maximumFractionDigits: 20 }).format(value);
 }
 
 function formatUsd(value: number): string {
