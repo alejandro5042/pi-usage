@@ -98,8 +98,8 @@ test("GitHub Copilot adapter preserves AI-credit billing semantics", () => {
 		period: "monthly",
 		resetsAt: 1_785_542_400,
 	});
-	assert.match(formatUsageReport(report, "current"), /AI credits:\s+300 of 1500 used · 20%/);
-	assert.equal(formatUsageStatusline(report), "credits 300/1500 20%");
+	assert.match(formatUsageReport(report, "current"), /AI credits:\s+300 of 1,500 used · 20%/);
+	assert.equal(formatUsageStatusline(report), "credits 300/1,500 20%");
 });
 
 test("GitHub Copilot adapter represents overage without rejecting negative remaining quota", () => {
@@ -125,7 +125,7 @@ test("GitHub Copilot adapter represents overage without rejecting negative remai
 		{ id: "overage-used", label: "Additional usage", value: 100, unit: "count" },
 	]);
 	assert.match(formatUsageReport(report, "current"), /Additional usage:\s+100 AI credits/);
-	assert.equal(formatUsageStatusline(report), "credits 1500/1500 100% +100 over");
+	assert.equal(formatUsageStatusline(report), "credits 1,500/1,500 100% +100 over");
 });
 
 test("GitHub Copilot adapter normalizes the free-tier quota shape", () => {
